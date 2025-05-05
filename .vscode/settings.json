@@ -1,0 +1,10 @@
+{
+  "cSpell.words": ["Mastra"],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "editor.formatOnSave": true,
+  "eslint.validate": ["typescript", "javascript"],
+  "eslint.run": "onSave",
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+}
