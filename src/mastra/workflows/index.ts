@@ -1,17 +1,15 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { Workflow, Step } from '@mastra/core';
 import { releaseFetchAgent, summarizeAgent } from '../agents';
 import { CLINE_URL, ROO_URL } from '../../config/constants';
 
 export const services = [
-  { url: CLINE_URL, name: 'Cline', id: 'cline' },
-  { url: ROO_URL, name: 'Roo Code', id: 'roo' },
+  { url: CLINE_URL, name: 'Cline', stepId: 'releaseFetchCline' },
+  { url: ROO_URL, name: 'Roo Code', stepId: 'releaseFetchRooCode' },
 ];
 
-// URLs配列から複数のステップを生成する
-const releaseFetchSteps = services.map((service, index) => {
+const releaseFetchSteps = services.map((service) => {
   return new Step({
-    id: `releaseFetch${service.id}`,
+    id: service.stepId,
     execute: async (_context) => {
       const response = await releaseFetchAgent.generate(
         [
@@ -22,8 +20,8 @@ const releaseFetchSteps = services.map((service, index) => {
         ],
         {
           maxSteps: 10,
-          resourceId: `releaseFetch${index}`,
-          threadId: `${service.id}-${new Date().toISOString().split('T')[0]}`,
+          resourceId: service.stepId,
+          threadId: `${service.stepId}-${new Date().toISOString().split('T')[0]}`,
         }
       );
       return response.text;
@@ -34,11 +32,11 @@ const releaseFetchSteps = services.map((service, index) => {
 const summarizeStep = new Step({
   id: 'summarize',
   execute: async ({ context }) => {
-    const results = [];
+    const results: string[] = [];
 
-    // resultsに各ステップの結果を追加
-    results.push(context.getStepResult<string>('releaseFetchcline'));
-    results.push(context.getStepResult<string>('releaseFetchroo'));
+    services.forEach((service) => {
+      results.push(context.getStepResult<string>(service.stepId));
+    });
 
     const response = await summarizeAgent.generate(
       [
@@ -57,7 +55,6 @@ const summarizeStep = new Step({
   },
 });
 
-// リリース情報の収集と要約を行うワークフロー
 export const releaseSummaryWorkflow = new Workflow({
   name: 'release-summary-workflow',
 });
@@ -66,11 +63,8 @@ releaseFetchSteps.forEach((step) => {
   releaseSummaryWorkflow.step(step);
 });
 
-// 全てのフェッチステップのIDを取得
-const fetchStepIds = services.map(service => `releaseFetch${service.id}`);
-
+const fetchStepIds = services.map((service) => service.stepId);
 // summarizeステップを追加し、全てのフェッチステップの後に実行されるように設定
 releaseSummaryWorkflow.after(fetchStepIds).step(summarizeStep);
 
-// ワークフローをコミット
 releaseSummaryWorkflow.commit();
