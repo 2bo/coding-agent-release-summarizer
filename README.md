@@ -71,6 +71,22 @@ This project consists mainly of the following workflows:
 1. **Release Information Fetching**: Fetches release information from GitHub release pages of each service
 2. **Information Summarization**: Formats the fetched release information and summarizes the information from the past week
 
+### Workflow Flowchart
+
+```mermaid
+flowchart TD
+    A[Start] --> B[ReleaseFetchAgent: Cline]
+    A --> C[ReleaseFetchAgent: Roo Code]
+    B --> H[SummarizeAgent]
+    C --> H
+    H --> K[End]
+```
+
+The workflow process:
+
+1. **Parallel Fetching**: Multiple ReleaseFetchAgents work in parallel to collect and filter release information
+2. **Summarization**: The SummarizeAgent combines all relevant updates and produces the final markdown summary
+
 ## License
 
 MIT
