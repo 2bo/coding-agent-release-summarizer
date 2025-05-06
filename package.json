@@ -2,6 +2,7 @@
   "name": "coding-agent-release-summarizer",
   "version": "1.0.0",
   "main": "index.js",
+  "bin": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "mastra dev",
@@ -10,7 +11,7 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "mcp-server": "tsx src/mcp-server/server.ts"
+    "build:mcp": "tsup src/mastra/mcp-server/index.ts --format esm --no-splitting --dts && chmod +x dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -25,11 +26,13 @@
     "@mastra/memory": "^0.3.1",
     "node-html-parser": "^7.0.1",
     "rss-parser": "^3.13.0",
+    "turndown": "^7.2.0",
     "zod": "^3.24.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",
     "@types/node": "^22.15.3",
+    "@types/turndown": "^5.0.5",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "eslint": "^9.26.0",
@@ -37,6 +40,7 @@
     "globals": "^16.0.0",
     "mastra": "^0.6.0",
     "prettier": "^3.5.3",
+    "tsup": "^8.4.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.1"
