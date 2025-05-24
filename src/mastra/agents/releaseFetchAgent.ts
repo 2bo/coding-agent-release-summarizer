@@ -3,6 +3,7 @@ import { Memory } from '@mastra/memory';
 import { getGeminiFlashModel } from '../models/google';
 import { mcpClient } from '../mcp-client';
 import { currentTimeTool } from '../tools';
+import { LibSQLStore } from '@mastra/libsql';
 
 // エージェントの定義
 export const releaseFetchAgent = new Agent({
@@ -14,6 +15,8 @@ export const releaseFetchAgent = new Agent({
   直近1週間以内にリリースされた情報がない場合は、直近1週間以内にリリースされた情報はありませんと出力してください。
   `,
   model: getGeminiFlashModel(),
-  memory: new Memory(),
+  memory: new Memory({
+    storage: new LibSQLStore({ url: 'file:../../memory.db' }),
+  }),
   tools: { ...(await mcpClient.getTools()), currentTimeTool },
 });

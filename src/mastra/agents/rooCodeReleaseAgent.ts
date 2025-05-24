@@ -3,12 +3,13 @@ import { Memory } from '@mastra/memory';
 import { getGeminiFlashModel } from '../models/google';
 import { playwrightClient } from '../mcp-client/playwright-client';
 import { currentTimeTool } from '../tools';
+import { LibSQLStore } from '@mastra/libsql';
 
 // RooCodeのリリース情報を取得するエージェントの定義
 export const rooCodeReleaseAgent = new Agent({
   name: 'RooCodeReleaseAgent',
   instructions: `
-  このエージェントはRoo Codeのリリース情報を取得するためのものです。
+  このエージェントはRoo Codeのリリース情報を取得して返すエージェントです。
   Playwright MCP Serverを使用して、(https://www.google.com)でRoo Codeのリリース情報を検索してください。
   検索結果の中から、リンクを開いて、公式なリリースノートページを見つけて、リリース情報を取得します。
   
@@ -27,6 +28,8 @@ export const rooCodeReleaseAgent = new Agent({
   すべての情報を日本語で要約して返してください。
   `,
   model: getGeminiFlashModel(),
-  memory: new Memory(),
+  memory: new Memory({
+    storage: new LibSQLStore({ url: 'file:../../memory.db' }),
+  }),
   tools: { ...(await playwrightClient.getTools()), currentTimeTool },
 });

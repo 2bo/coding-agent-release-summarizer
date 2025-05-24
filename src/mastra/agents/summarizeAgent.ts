@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { getGeminiFlashModel } from '../models/google';
 import { currentTimeTool } from '../tools';
+import { LibSQLStore } from '@mastra/libsql';
 
 // エージェントの定義
 export const summarizeAgent = new Agent({
@@ -22,6 +23,8 @@ export const summarizeAgent = new Agent({
 
   `,
   model: getGeminiFlashModel(),
-  memory: new Memory(),
+  memory: new Memory({
+    storage: new LibSQLStore({ url: 'file:../../memory.db' }),
+  }),
   tools: { currentTimeTool },
 });

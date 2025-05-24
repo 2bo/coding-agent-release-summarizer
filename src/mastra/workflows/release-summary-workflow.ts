@@ -1,16 +1,20 @@
-import { Workflow, Step } from '@mastra/core';
 import { releaseFetchAgent, summarizeAgent } from '../agents';
 import { CLINE_URL, ROO_URL } from '../../config/constants';
+import { createStep, createWorkflow } from '@mastra/core';
+import { z } from 'zod';
 
 export const services = [
   { url: CLINE_URL, name: 'Cline', stepId: 'releaseFetchCline' },
   { url: ROO_URL, name: 'Roo Code', stepId: 'releaseFetchRooCode' },
 ];
 
-const releaseFetchSteps = services.map((service) => {
-  return new Step({
+const releaseFetchSteps = services.map((service) =>
+  createStep({
     id: service.stepId,
-    execute: async (_context) => {
+    description: `${service.name} のリリース情報を取得`,
+    inputSchema: z.void(),
+    outputSchema: z.string(),
+    async execute(_context: any) {
       const response = await releaseFetchAgent.generate(
         [
           {
@@ -26,45 +30,37 @@ const releaseFetchSteps = services.map((service) => {
       );
       return response.text;
     },
-  });
-});
+  })
+);
+const fetchResultsSchema = z.object(
+  Object.fromEntries(services.map((s) => [s.stepId, z.string()])) as Record<string, z.ZodString>
+);
 
-const summarizeStep = new Step({
+const summarizeStep = createStep({
   id: 'summarize',
-  execute: async ({ context }) => {
-    const results: string[] = [];
-
-    services.forEach((service) => {
-      results.push(context.getStepResult<string>(service.stepId));
-    });
-
-    const response = await summarizeAgent.generate(
-      [
-        {
-          role: 'user',
-          content: `以下のリリース情報を要約してください。\n\n${results.join('\n\n')}`,
-        },
-      ],
+  description: '全サービスのリリース情報を要約',
+  inputSchema: fetchResultsSchema,
+  outputSchema: z.string(),
+  async execute({ inputData }) {
+    const merged = Object.values(inputData).join('\n\n');
+    const resp = await summarizeAgent.generate(
+      [{ role: 'user', content: `以下のリリース情報を要約してください。\n\n${merged}` }],
       {
         maxSteps: 10,
         resourceId: 'summarize',
-        threadId: `summary-${new Date().toISOString().split('T')[0]}`,
+        threadId: `summarize-${new Date().toISOString().split('T')[0]}`, // ★追加
       }
     );
-    return response.text;
+    return resp.text;
   },
 });
 
-export const releaseSummaryWorkflow = new Workflow({
-  name: 'release-summary-workflow',
+export const releaseSummaryWorkflow = createWorkflow({
+  id: 'release-summary-workflow',
+  inputSchema: z.void(),
+  outputSchema: z.string(),
+  steps: [...releaseFetchSteps, summarizeStep],
 });
 
-releaseFetchSteps.forEach((step) => {
-  releaseSummaryWorkflow.step(step);
-});
-
-const fetchStepIds = services.map((service) => service.stepId);
-// summarizeステップを追加し、全てのフェッチステップの後に実行されるように設定
-releaseSummaryWorkflow.after(fetchStepIds).step(summarizeStep);
-
+releaseSummaryWorkflow.parallel(releaseFetchSteps).then(summarizeStep);
 releaseSummaryWorkflow.commit();

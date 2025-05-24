@@ -1,4 +1,5 @@
 import { Mastra } from '@mastra/core';
+import { LibSQLStore } from '@mastra/libsql';
 import { releaseFetchAgent, rooCodeReleaseAgent } from './agents';
 import { createLogger } from '@mastra/core/logger';
 import { releaseSummaryWorkflow } from './workflows/release-summary-workflow';
@@ -11,4 +12,5 @@ export const mastra = new Mastra({
     name: 'Summarizer Agent',
     level: 'debug',
   }),
+  storage: new LibSQLStore({ url: 'file:./memory.db' }), // SQLite ファイル
 });
